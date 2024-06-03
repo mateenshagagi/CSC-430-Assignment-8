@@ -8,3 +8,9 @@ Scott Pramuk
 Sammy Paykel
 
 Kendrick Tran
+
+# Roadmap
+1. Understand Functions, Lists, and Classes
+2. Add BinOps
+3. Add ifs
+4. Add lambs
