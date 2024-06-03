@@ -1,10 +1,29 @@
-program zode4
-    ! This is a comment line; it is ignored by the compiler
-    print *, 'Hello, World!'
+module Expressions
+  implicit none
+  private
+  public ExprC, IdC
+  ! Note another way of using the public attribute:
+  ! gathering all public data types in one place.
 
-    ! Add ExprC classes: NumC, ifleq0?, BinOps
-    ! Add interp: takes in ExprC's matches it to find what type of BinOp
+  type :: ExprC
+  end type
+
+  type, extends(ExprC) :: IdC
+    character(10) :: name
+  end type
 
 
-  end program zode4
-  
+end module Expressions
+
+program main
+  use Expressions
+  implicit none
+  type(IdC) :: hello
+
+  hello%name = "Hello"
+
+  print *, hello%name
+
+
+
+end program main
