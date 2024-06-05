@@ -1,7 +1,7 @@
 module Expressions
     implicit none
     private
-    public :: ExprC, IdC, NumC, BinOp, BoolC, IfC, interp
+    public :: ExprC, IdC, NumC, BinOp, BoolC, IfC, LamC, AppC, interp
 
     type :: ExprC
     end type ExprC
@@ -26,6 +26,14 @@ module Expressions
     type, extends(ExprC) :: IfC
       class(ExprC), allocatable :: condition, trueBranch, falseBranch
     end type IfC
+
+    type, extends(ExprC) :: LamC
+      class(ExprC), allocatable :: param, body
+    end type Lamc
+
+    type, extends(ExprC) :: AppC
+      class(ExprC), allocatable :: function, argument
+    end type AppC
 
     !(struct AppC ([fun : ExprC] [arg : (Listof ExprC)]) #:transparent)
     !(struct LamC ([params : (Listof IdC)] [body : ExprC]) #:transparent)
