@@ -1,3 +1,9 @@
+! TODO:
+! add Value class
+! Type Value holds 2 fields: an integer and a string
+! change interp to return a Value
+
+
 module Expressions
     implicit none
     private
@@ -42,10 +48,12 @@ contains
 
     recursive function interp(expr, error) result(value)
         class(ExprC), intent(in) :: expr
+        type(NumC) :: num
         integer, intent(out) :: error
         integer :: value
 
         error = 0  ! Initialize error as no error
+        num%n = 1
 
         select type (e => expr)
         type is (NumC)
@@ -100,6 +108,62 @@ contains
             value = 0
         end select
     end function interp
+
+    function substitute(body, param, arg, error) result(value)
+        class(ExprC), intent(in) :: body, arg
+        class(IdC), intent(in) :: param
+        type(BinOp) :: binOpBody
+        type(IfC) :: ifCBody
+
+        integer, intent(out) :: error
+        integer :: value
+
+        error = 0  ! Initialize error as no error
+
+        select type (e => body)
+        type is (NumC)
+            value = e%n
+        type is (BoolC)
+            value = merge(1, 0, e%value)  ! Convert logical to integer (true to 1, false to 0)
+        type is (BinOp)
+            if (allocated(e%l) .and. allocated(e%r)) then 
+                binOpBody%l = e%l
+                binOpBody%r = e%r
+                binOpBody%operation = e%operation
+                ! check if the interp of e%l is a string equal to the interped value of param
+
+                if(interp(e%l, error) == param) then
+                    binOpBody%l = arg
+                end if
+                if(interp(e%r, error) == param) then
+                    binOpBody%r = arg
+                end if
+                value = interp(binOpBody, error)
+                
+            else
+                print *, 'Error: Incomplete operation.'
+                error = 1
+                value = 0
+            end if
+        type is (IfC)
+            if (allocated(e%condition) .and. allocated(e%trueBranch) .and. allocated(e%falseBranch)) then
+                
+            else
+                print *, 'Error: IfC expression not fully specified.'
+                error = 1
+                value = 0
+            end if
+        type is (IdC)
+            print *, 'Error: Identifier cannot be interpreted as a value.'
+            error = 1
+            value = 0
+        class default
+            print *, 'Error: Unknown type.'
+            error = 1
+            value = 0
+        end select
+    end function substitute
+
 
 end module Expressions
 
