@@ -27,6 +27,9 @@ module Expressions
       class(ExprC), allocatable :: condition, trueBranch, falseBranch
     end type IfC
 
+    !(struct AppC ([fun : ExprC] [arg : (Listof ExprC)]) #:transparent)
+    !(struct LamC ([params : (Listof IdC)] [body : ExprC]) #:transparent)
+
 contains
 
     recursive function interp(expr, error) result(value)
