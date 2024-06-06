@@ -1,10 +1,3 @@
-! TODO:
-! add Value class
-! Type Value holds 2 fields: an integer and a string
-! change interp to return a Value
-
-
-
 module Expressions
     implicit none
     private
@@ -42,18 +35,16 @@ module Expressions
     end type IfC
 
     type, extends(ExprC) :: LamC
-      class(ExprC), allocatable :: param, body
+      class(IdC), allocatable :: param
+      class(ExprC), allocatable :: body
     end type Lamc
 
     type, extends(ExprC) :: AppC
-      class(ExprC), allocatable :: function, argument
+      class(LamC), allocatable :: function
+      class(ExprC), allocatable :: argument
     end type AppC
 
     
-
-    !(struct AppC ([fun : ExprC] [arg : (Listof ExprC)]) #:transparent)
-    !(struct LamC ([params : (Listof IdC)] [body : ExprC]) #:transparent)
-
 contains
 
     recursive function interp(expr, error) result(result_value)
@@ -145,91 +136,115 @@ contains
                 !value = 0
             end if
         type is (IdC)
-            print *, 'Error: Identifier cannot be interpreted as a value.'
+            result_value%str = e%name
+            result_value%flag = 2
+            !value = 0
+        type is (AppC)
+            result_value = substitute(e%function%body, e%function%param, e%argument, error)
+            !value = 0
+        class default
+            print *, 'Error: Unknown type!'
             error = 1
+            !value = 0
+        end select
+    end function interp
+
+    function substitute(body, param, arg, error) result(result_value)
+        implicit none
+        class(ExprC), intent(in) :: body, arg
+        class(IdC), intent(in) :: param
+        integer, intent(out) :: error
+        type(BinOp) :: binOpBody
+        type(IfC) :: IfCBody
+        type(Value) :: result_value
+        type(Value) :: temp
+        type(Value) :: temp2
+        result_value%number = 0
+        result_value%str = ''
+        result_value%bool = .false.
+        result_value%flag = -1
+
+        error = 0  ! Initialize error as no error
+
+        select type (e => body)
+        type is (NumC)
+          result_value = interp(e, error)
+        type is (BoolC)
+            result_value = interp(e, error)
+        type is (BinOp)
+            if (allocated(e%l) .and. allocated(e%r)) then
+                binOpBody%l = e%l
+                binOpBody%r = e%r
+                binOpBody%operation = e%operation
+
+                temp = interp(e%l, error)
+                temp2 = interp(param, error)
+                if(temp%str == temp2%str) then
+                    binOpBody%l = arg
+                end if
+                temp = interp(e%r, error)
+                if(temp%str == temp2%str) then
+                    binOpBody%r = arg
+                end if
+                result_value = interp(binOpBody, error)
+            else
+                print *, 'Error: Incomplete operation.'
+                error = 1
+                result_value%flag = -1
+            end if
+        type is (IfC)
+            if (allocated(e%condition) .and. allocated(e%trueBranch) .and. allocated(e%falseBranch)) then
+              
+            end if
+        type is (IdC)
+            result_value%str = e%name
+            result_value%flag = 2
             !value = 0
         class default
             print *, 'Error: Unknown type.'
             error = 1
             !value = 0
         end select
-    end function interp
+    end function substitute
 
-    ! function substitute(body, param, arg, error) result(value)
-    !     class(ExprC), intent(in) :: body, arg
-    !     class(IdC), intent(in) :: param
-    !     type(BinOp) :: binOpBody
-    !     type(IfC) :: ifCBody
-
-    !     integer, intent(out) :: error
-    !     integer :: value
-
-    !     error = 0  ! Initialize error as no error
-
-    !     select type (e => body)
-    !     type is (NumC)
-    !         value = e%n
-    !     type is (BoolC)
-    !         value = merge(1, 0, e%value)  ! Convert logical to integer (true to 1, false to 0)
-    !     type is (BinOp)
-    !         if (allocated(e%l) .and. allocated(e%r)) then 
-    !             binOpBody%l = e%l
-    !             binOpBody%r = e%r
-    !             binOpBody%operation = e%operation
-    !             ! check if the interp of e%l is a string equal to the interped value of param
-
-    !             if(interp(e%l, error) == param) then
-    !                 binOpBody%l = arg
-    !             end if
-    !             if(interp(e%r, error) == param) then
-    !                 binOpBody%r = arg
-    !             end if
-    !             value = interp(binOpBody, error)
-                
-    !         else
-    !             print *, 'Error: Incomplete operation.'
-    !             error = 1
-    !             !value = 0
-    !         end if
-    !     type is (IfC)
-    !         if (allocated(e%condition) .and. allocated(e%trueBranch) .and. allocated(e%falseBranch)) then
-                
-    !         else
-    !             print *, 'Error: IfC expression not fully specified.'
-    !             error = 1
-    !             !value = 0
-    !         end if
-    !     type is (IdC)
-    !         print *, 'Error: Identifier cannot be interpreted as a value.'
-    !         error = 1
-    !         !value = 0
-    !     class default
-    !         print *, 'Error: Unknown type.'
-    !         error = 1
-    !         !value = 0
-    !     end select
-    ! end function substitute
 end module Expressions
 
 
 program main
     use Expressions
     implicit none
-    type(NumC) :: ten, num1, num2
+    type(NumC) :: ten, num1, num2, one, argument
     type(BoolC) :: boolExpr
+    type(IdC) :: add
+    type(IdC) :: x
     type(IfC) :: ifTest
+    type(BinOp) :: add1
+    type(AppC) :: add1AppC
+    type(LamC) :: add1LamC
     type(BinOp) :: greaterThan10
     type(Value) :: retValue
     integer :: error_flag
 
+    one%n = 1
+    argument%n = 50
+    x%name = "x"
+    add1%operation = "+"
+    add1%l = one
+    add1%r = x
+    add1LamC%param = x
+    add1LamC%body = add1
+    add1AppC%function = add1LamC
+    add1AppC%argument = argument
+
     ten%n = 10
     boolExpr%bool = .false.
+    add%name = "add"
 
     allocate(greaterThan10%l, source=ten)
-    allocate(greaterThan10%r, source=num2)
+    allocate(greaterThan10%r, source=num1)
     greaterThan10%operation = '<'
     !greaterThan10%l = ten
-    num1%n = 100
+    num1%n = 0
     num2%n = -10
     !greaterThan10%r = num2
 
@@ -240,9 +255,14 @@ program main
     ! ifTest%trueBranch = num1
     ! ifTest%falseBranch = num2
 
-    retValue = interp(ifTest, error_flag)
+    !retValue = interp(ifTest, error_flag)
+    retValue = interp(add1AppC, error_flag)
     if (error_flag == 0) then
-        print *, 'The result of the conditional operation is:', retValue%number
+        if (retValue%flag == 0) then
+            print *, 'The result of the conditional operation is:', retValue%number
+        else 
+            print *, "interp result: ", retValue%str
+        end if
     else
         print *, 'An error occurred during interpretation.'
     end if
