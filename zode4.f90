@@ -234,13 +234,13 @@ end module Expressions
 program main
     use Expressions
     implicit none
-    type(NumC) :: ten, num1, num2, one, argument
+    type(NumC) :: ten, num1, num2, one, argument, fifteen, zero
     type(BoolC) :: boolExpr
     type(IdC) :: add, x
     type(IfC) :: ifTest
-    type(BinOp) :: add1, greaterThan10
-    type(AppC) :: add1AppC, ifLessThan0AppC
-    type(LamC) :: add1LamC
+    type(BinOp) :: add1, lessThan10
+    type(AppC) :: add1AppC, ifAppC
+    type(LamC) :: add1LamC, ifLamC
     type(Value) :: retValue
     integer :: error_flag
 
@@ -259,27 +259,58 @@ program main
     ! IfTest: return x < 0x
     
 
+
     ten%n = 10
     boolExpr%bool = .false.
     add%name = "add"
 
-    allocate(greaterThan10%l, source=ten)
-    allocate(greaterThan10%r, source=num1)
-    greaterThan10%operation = '<'
-    !greaterThan10%l = ten
+    allocate(lessThan10%l, source=ten)
+    allocate(lessThan10%r, source=num1)
+    lessThan10%operation = '<'
+    !lessThan10%l = ten
     num1%n = 0
     num2%n = -10
-    !greaterThan10%r = num2
+    !lessThan10%r = num2
 
-    allocate(ifTest%condition, source=greaterThan10)
+    allocate(ifTest%condition, source=lessThan10)
     allocate(ifTest%trueBranch, source=num1)
     allocate(ifTest%falseBranch, source=num2)
-    ! ifTest%condition = greaterThan10
+    ! ifTest%condition = lessThan10
     ! ifTest%trueBranch = num1
     ! ifTest%falseBranch = num2
 
     !retValue = interp(ifTest, error_flag)
     retValue = interp(add1AppC, error_flag)
+    if (error_flag == 0) then
+        if (retValue%flag == 0) then
+            print *, 'The result of the conditional operation is:', retValue%number
+        else 
+            print *, "interp result: ", retValue%str
+        end if
+    else
+        print *, 'An error occurred during interpretation.'
+    end if
+
+    ! test appc ifc
+    fifteen%n = 15
+    zero%n = 0
+
+    ! change this param to test true/false branch in appc body
+    lessThan10%r = fifteen
+
+    ifTest%condition = lessThan10
+    ifTest%trueBranch = x
+    ifTest%falseBranch = zero
+
+    ifLamC%param = x
+    ifLamC%body = ifTest
+
+    ifAppC%function = ifLamC
+    ifAppC%argument = one
+
+    ! (AppC (LamC x (if < 10)) 
+    !       1)
+    retValue = interp(ifAppC, error_flag)
     if (error_flag == 0) then
         if (retValue%flag == 0) then
             print *, 'The result of the conditional operation is:', retValue%number
