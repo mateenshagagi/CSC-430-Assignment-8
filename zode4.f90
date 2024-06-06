@@ -194,7 +194,28 @@ contains
             end if
         type is (IfC)
             if (allocated(e%condition) .and. allocated(e%trueBranch) .and. allocated(e%falseBranch)) then
-              
+                IfCBody%condition = e%condition
+                IfCBody%trueBranch = e%trueBranch
+                IfCBody%falseBranch = e%falseBranch
+
+                temp = interp(e%condition, error)
+                temp2 = interp(param, error)
+                if(temp%str == temp2%str) then
+                    IfCBody%condition = arg
+                end if
+                temp = interp(e%trueBranch, error)
+                if(temp%str == temp2%str) then
+                    IfCBody%trueBranch = arg
+                end if
+                temp = interp(e%falseBranch, error)
+                if(temp%str == temp2%str) then
+                    IfCBody%falseBranch = arg
+                end if
+                result_value = interp(IfCBody, error)
+            else
+                print *, 'Error: Incomplete operation.'
+                error = 1
+                result_value%flag = -1
             end if
         type is (IdC)
             result_value%str = e%name
@@ -215,16 +236,15 @@ program main
     implicit none
     type(NumC) :: ten, num1, num2, one, argument
     type(BoolC) :: boolExpr
-    type(IdC) :: add
-    type(IdC) :: x
+    type(IdC) :: add, x
     type(IfC) :: ifTest
-    type(BinOp) :: add1
-    type(AppC) :: add1AppC
+    type(BinOp) :: add1, greaterThan10
+    type(AppC) :: add1AppC, ifLessThan0AppC
     type(LamC) :: add1LamC
-    type(BinOp) :: greaterThan10
     type(Value) :: retValue
     integer :: error_flag
 
+    ! add1: adds 1 to parameter x
     one%n = 1
     argument%n = 50
     x%name = "x"
@@ -235,6 +255,9 @@ program main
     add1LamC%body = add1
     add1AppC%function = add1LamC
     add1AppC%argument = argument
+
+    ! IfTest: return x < 0x
+    
 
     ten%n = 10
     boolExpr%bool = .false.
